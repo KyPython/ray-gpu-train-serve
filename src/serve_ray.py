@@ -222,21 +222,27 @@ def main():
     
     # Initialize Ray if not already initialized
     import ray
-    if not ray.is_initialized():
-        ray.init(
-            ignore_reinit_error=True,
-            runtime_env={"env_vars": {"RAY_SERVE_ENABLE_EXPERIMENTAL_STREAMING": "1"}}
-        )
+    try:
+        if not ray.is_initialized():
+            ray.init(
+                ignore_reinit_error=True,
+                _temp_dir="/tmp/ray"
+            )
+    except Exception as e:
+        logger.warning(f"Ray initialization warning: {e}")
     
     # Start Ray Serve - route_prefix is set in serve.run
-    # Use name parameter to ensure proper deployment
+    # serve.run() blocks and keeps the process alive
+    logger.info("Deploying application...")
     serve.run(
         create_app(),
-        name="predict_app",
         host="0.0.0.0",
         port=port,
         route_prefix="/predict"
     )
+    
+    # This should never be reached as serve.run() blocks
+    logger.error("Ray Serve exited unexpectedly!")
     
     logger.info("=" * 60)
     logger.info("Ray Serve is running!")
