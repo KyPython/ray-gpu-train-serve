@@ -4,11 +4,6 @@ services:
     env: python
     buildCommand: pip install -r requirements.txt && python src/train_ray.py
     startCommand: python src/serve_ray.py
-    envVars:
-      - key: PORT
-        fromService:
-          type: web
-          name: ray-serve-app
-          property: port
+    # PORT is automatically set by Render, no need to specify
     healthCheckPath: /predict
 
