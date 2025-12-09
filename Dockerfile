@@ -27,9 +27,21 @@ COPY src/ ./src/
 # Create artifacts directory and train model
 RUN mkdir -p artifacts && \
     if [ ! -f "artifacts/model.pt" ]; then \
+        echo "Training model..." && \
         python src/train_ray.py && \
+        echo "Training completed, checking artifacts..." && \
         ls -la artifacts/ && \
-        test -f artifacts/model.pt && echo "Model file verified" || echo "Warning: Model file not found"; \
+        if [ -f "artifacts/model.pt" ]; then \
+            echo "Model file verified: $(ls -lh artifacts/model.pt)"; \
+        else \
+            echo "Warning: Model file not found in artifacts/, checking checkpoint..." && \
+            find /root/ray_results -name "model.pt" -type f 2>/dev/null | head -1 | while read f; do \
+                echo "Found model at: $f" && \
+                cp "$f" artifacts/model.pt && \
+                echo "Copied model to artifacts/model.pt"; \
+            done; \
+        fi && \
+        test -f artifacts/model.pt && echo "Final verification: Model exists" || echo "ERROR: Model file still not found"; \
     else \
         echo "Model already exists, skipping training"; \
     fi

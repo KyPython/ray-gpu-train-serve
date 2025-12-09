@@ -226,20 +226,30 @@ def main():
         if not ray.is_initialized():
             ray.init(
                 ignore_reinit_error=True,
-                _temp_dir="/tmp/ray"
+                _temp_dir="/tmp/ray",
+                num_cpus=1
             )
+            logger.info("Ray initialized successfully")
     except Exception as e:
         logger.warning(f"Ray initialization warning: {e}")
     
     # Start Ray Serve - route_prefix is set in serve.run
     # serve.run() blocks and keeps the process alive
     logger.info("Deploying application...")
-    serve.run(
-        create_app(),
-        host="0.0.0.0",
-        port=port,
-        route_prefix="/predict"
-    )
+    logger.info(f"About to start Ray Serve on 0.0.0.0:{port}")
+    
+    try:
+        serve.run(
+            create_app(),
+            host="0.0.0.0",
+            port=port,
+            route_prefix="/predict"
+        )
+    except KeyboardInterrupt:
+        logger.info("Ray Serve stopped by user")
+    except Exception as e:
+        logger.error(f"Ray Serve error: {e}")
+        raise
     
     # This should never be reached as serve.run() blocks
     logger.error("Ray Serve exited unexpectedly!")
