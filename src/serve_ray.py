@@ -14,6 +14,7 @@ Then call: curl -X POST http://localhost:8000/predict -H "Content-Type: applicat
 import os
 import logging
 import torch
+from fastapi import FastAPI, Request
 from ray import serve
 from ray.serve import Application
 from model_def import SimpleMLP
@@ -112,18 +113,24 @@ class ModelDeployment:
             }
 
 
+app = FastAPI()
+
+
 @serve.deployment(
-    num_replicas=1
+    num_replicas=1,
+    route_prefix="/predict"
 )
+@serve.ingress(app)
 class PredictDeployment:
     """
-    HTTP deployment for the prediction endpoint.
+    HTTP deployment for the prediction endpoint using FastAPI.
     """
     
     def __init__(self, model_deployment):
         self.model = model_deployment
     
-    async def __call__(self, request: dict) -> dict:
+    @app.post("/")
+    async def predict(self, request: Request) -> dict:
         """
         HTTP POST endpoint for predictions.
         
@@ -135,7 +142,8 @@ class PredictDeployment:
         Returns:
             JSON response with prediction
         """
-        features = request.get("features", [])
+        data = await request.json()
+        features = data.get("features", [])
         
         if not features:
             return {
@@ -212,12 +220,11 @@ def main():
     logger.info(f"Binding to 0.0.0.0:{port}")
     logger.info("=" * 60)
     
-    # Use route_prefix in serve.run (new API)
+    # Start Ray Serve with FastAPI integration
     serve.run(
         create_app(),
         host="0.0.0.0",
-        port=port,
-        route_prefix="/predict"
+        port=port
     )
     
     logger.info("=" * 60)

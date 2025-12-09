@@ -134,6 +134,11 @@ def main():
     """
     Main training entrypoint.
     """
+    # Suppress deprecation warnings for cleaner output
+    import warnings
+    import os
+    os.environ["RAY_TRAIN_ENABLE_V2_MIGRATION_WARNINGS"] = "0"
+    
     # Training configuration
     # In production, this would come from a config file (YAML, JSON, etc.)
     train_config = {
