@@ -172,14 +172,38 @@ def main():
     """
     logger.info("Starting Ray Serve...")
     
-    # Check if model exists
+    # Check if model exists, train if not
     model_path = "artifacts/model.pt"
     if not os.path.exists(model_path):
-        logger.error(
-            f"Model not found at {model_path}. "
-            "Please run training first: python src/train_ray.py"
+        logger.warning(
+            f"Model not found at {model_path}. Attempting to train..."
         )
-        return
+        try:
+            # Try to train the model
+            import sys
+            import subprocess
+            script_dir = os.path.dirname(os.path.abspath(__file__))
+            train_script = os.path.join(script_dir, "train_ray.py")
+            result = subprocess.run(
+                [sys.executable, train_script],
+                capture_output=True,
+                text=True,
+                timeout=300  # 5 minute timeout
+            )
+            if result.returncode == 0 and os.path.exists(model_path):
+                logger.info("Model trained successfully!")
+            else:
+                logger.error(f"Training failed: {result.stderr}")
+                logger.error(
+                    "Please run training manually: python src/train_ray.py"
+                )
+                return
+        except Exception as e:
+            logger.error(
+                f"Failed to train model: {e}. "
+                "Please run training manually: python src/train_ray.py"
+            )
+            return
     
     # Start Ray Serve
     # In production, this would be deployed to a Ray cluster
