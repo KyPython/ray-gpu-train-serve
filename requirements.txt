@@ -1,0 +1,10 @@
+# Ray core dependencies
+ray[default]>=2.8.0
+
+# PyTorch (CPU version by default; install GPU version separately if needed)
+# For GPU support: pip install torch torchvision --index-url https://download.pytorch.org/whl/cu118
+torch>=2.0.0
+
+# Additional utilities
+numpy>=1.24.0
+
