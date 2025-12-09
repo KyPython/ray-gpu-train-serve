@@ -1,0 +1,18 @@
+version: '3.8'
+
+services:
+  ray-serve:
+    build: .
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./artifacts:/app/artifacts
+    environment:
+      - RAY_OBJECT_STORE_ALLOW_SLOW_STORAGE=1
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/predict"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+

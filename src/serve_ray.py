@@ -184,7 +184,8 @@ def main():
     # Start Ray Serve
     # In production, this would be deployed to a Ray cluster
     # and managed via Ray Serve CLI or Kubernetes
-    serve.run(create_app(), host="0.0.0.0", port=8000)
+    port = int(os.environ.get("PORT", 8000))
+    serve.run(create_app(), host="0.0.0.0", port=port)
     
     logger.info("=" * 60)
     logger.info("Ray Serve is running!")

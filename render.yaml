@@ -1,0 +1,11 @@
+services:
+  - type: web
+    name: ray-serve-app
+    env: python
+    buildCommand: pip install -r requirements.txt
+    startCommand: python src/serve_ray.py
+    envVars:
+      - key: PORT
+        value: 8000
+    healthCheckPath: /predict
+

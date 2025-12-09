@@ -181,6 +181,87 @@ If port 8000 is already in use, modify the port in `serve_ray.py`:
 serve.run(create_app(), host="0.0.0.0", port=8001)  # Change port
 ```
 
+## Deployment
+
+### GitHub Repository
+
+The project is available at: **https://github.com/KyPython/ray-gpu-train-serve**
+
+### Public Deployment Options
+
+#### Option 1: Railway (Recommended for Quick Deploy)
+
+1. Sign up at [Railway](https://railway.app)
+2. Create a new project from GitHub repository
+3. Select this repository: `KyPython/ray-gpu-train-serve`
+4. Railway will automatically detect the `railway.json` configuration
+5. Add a build step to train the model:
+   - Build Command: `python src/train_ray.py`
+   - Start Command: `python src/serve_ray.py`
+6. Deploy! Your service will be available at `https://your-app.railway.app`
+
+**Note**: You may need to train the model first or include it in the repository.
+
+#### Option 2: Render
+
+1. Sign up at [Render](https://render.com)
+2. Create a new Web Service
+3. Connect your GitHub repository
+4. Render will automatically detect `render.yaml`
+5. Deploy! Your service will be available at `https://your-app.onrender.com`
+
+#### Option 3: Docker Deployment
+
+Build and run with Docker:
+
+```bash
+# Build the image
+docker build -t ray-gpu-train-serve:latest .
+
+# Run the container
+docker run -p 8000:8000 ray-gpu-train-serve:latest
+```
+
+Or use Docker Compose:
+
+```bash
+docker-compose up
+```
+
+#### Option 4: Manual Cloud Deployment (AWS/GCP/Azure)
+
+1. **Train the model locally** or on a cloud instance:
+   ```bash
+   python src/train_ray.py
+   ```
+
+2. **Upload artifacts** to cloud storage (S3, GCS, Azure Blob):
+   ```bash
+   # Example for AWS S3
+   aws s3 cp artifacts/model.pt s3://your-bucket/models/model.pt
+   ```
+
+3. **Deploy to cloud compute**:
+   - **AWS**: Use EC2, ECS, or EKS with Ray Serve
+   - **GCP**: Use Compute Engine, Cloud Run, or GKE
+   - **Azure**: Use Virtual Machines, Container Instances, or AKS
+
+4. **Update `serve_ray.py`** to load model from cloud storage instead of local path
+
+### Pre-deployment Checklist
+
+- [ ] Train the model: `python src/train_ray.py`
+- [ ] Verify model exists: `ls artifacts/model.pt`
+- [ ] Test locally: `python src/serve_ray.py`
+- [ ] Test endpoint: `curl -X POST http://localhost:8000/predict -H "Content-Type: application/json" -d '{"features": [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0]}'`
+
+### Environment Variables
+
+For cloud deployments, you can configure:
+
+- `PORT`: Server port (default: 8000)
+- `RAY_OBJECT_STORE_ALLOW_SLOW_STORAGE`: Set to `1` for slower storage systems
+
 ## License
 
 MIT
