@@ -178,12 +178,47 @@ def main():
     logger.info("Training completed successfully!")
     logger.info(f"Final metrics: {result.metrics}")
     
+    # Extract model from checkpoint if it exists
+    # The model is saved in train_func, but we need to ensure it's accessible
+    checkpoint = result.checkpoint
+    if checkpoint:
+        logger.info(f"Checkpoint available at: {checkpoint.path}")
+        # Try to load model from checkpoint
+        try:
+            import shutil
+            checkpoint_path = checkpoint.path
+            # Check if model.pt exists in checkpoint directory
+            checkpoint_model_path = os.path.join(checkpoint_path, "model.pt")
+            if os.path.exists(checkpoint_model_path):
+                # Copy to artifacts directory
+                os.makedirs("artifacts", exist_ok=True)
+                shutil.copy2(checkpoint_model_path, "artifacts/model.pt")
+                logger.info("Model copied from checkpoint to artifacts/model.pt")
+        except Exception as e:
+            logger.warning(f"Could not copy model from checkpoint: {e}")
+    
     # Ensure model is saved locally
     # The checkpoint is already saved in train_func, but we verify it exists
-    if os.path.exists("artifacts/model.pt"):
-        logger.info("Model checkpoint verified at artifacts/model.pt")
+    model_path = "artifacts/model.pt"
+    abs_model_path = os.path.abspath(model_path)
+    
+    # Check both relative and absolute paths
+    found_path = None
+    if os.path.exists(model_path):
+        found_path = model_path
+    elif os.path.exists(abs_model_path):
+        found_path = abs_model_path
+    
+    if found_path:
+        logger.info(f"Model checkpoint verified at {found_path}")
+        logger.info(f"File size: {os.path.getsize(found_path)} bytes")
     else:
-        logger.warning("Model checkpoint not found at artifacts/model.pt")
+        logger.warning(f"Model checkpoint not found at {model_path} or {abs_model_path}")
+        # List artifacts directory
+        if os.path.exists("artifacts"):
+            logger.info(f"Artifacts directory contents: {os.listdir('artifacts')}")
+        else:
+            logger.warning("Artifacts directory does not exist!")
 
 
 if __name__ == "__main__":
