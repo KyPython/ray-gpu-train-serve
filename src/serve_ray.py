@@ -167,12 +167,12 @@ class PredictDeployment:
         return self.model.predict(features)
 
 
-def create_app() -> Application:
+def create_app():
     """
-    Create the Ray Serve application.
+    Create the Ray Serve deployment.
     
     Returns:
-        Application: Configured Ray Serve application
+        Deployment: Configured Ray Serve deployment
     """
     model_deployment = ModelDeployment.bind()
     return PredictDeployment.bind(model_deployment)
@@ -234,31 +234,30 @@ def main():
                 _temp_dir="/tmp/ray",
                 num_cpus=1,
                 object_store_memory=100 * 1024 * 1024,  # Limit object store to 100MB
-                _system_config={
-                    "object_spilling_config": {
-                        "type": "filesystem",
-                        "params": {
-                            "directory_path": "/tmp/ray_spill"
-                        }
-                    }
-                }
+                object_spilling_directory="/tmp/ray_spill"  # Use stable API
             )
             logger.info("Ray initialized successfully with memory limits")
     except Exception as e:
         logger.warning(f"Ray initialization warning: {e}")
     
-    # Start Ray Serve - route_prefix is set in serve.run
+    # Configure Ray Serve HTTP options
+    # In newer Ray versions, host/port are configured via HTTPOptions
+    from ray.serve.config import HTTPOptions
+    http_options = HTTPOptions(
+        host="0.0.0.0",
+        port=port
+    )
+    
+    # Start Ray Serve
     # serve.run() blocks and keeps the process alive
     logger.info("Deploying application...")
     logger.info(f"About to start Ray Serve on 0.0.0.0:{port}")
     
     try:
-        serve.run(
-            create_app(),
-            host="0.0.0.0",
-            port=port,
-            route_prefix="/predict"
-        )
+        # Deploy the application
+        serve.start(http_options=http_options)
+        app = create_app()
+        serve.run(app, route_prefix="/predict")
     except KeyboardInterrupt:
         logger.info("Ray Serve stopped by user")
     except Exception as e:
