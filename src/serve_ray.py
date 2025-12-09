@@ -209,12 +209,18 @@ def main():
     # In production, this would be deployed to a Ray cluster
     # and managed via Ray Serve CLI or Kubernetes
     port = int(os.environ.get("PORT", 8000))
+    
+    logger.info("=" * 60)
+    logger.info("Starting Ray Serve...")
+    logger.info(f"Binding to 0.0.0.0:{port}")
+    logger.info("=" * 60)
+    
     serve.run(create_app(), host="0.0.0.0", port=port)
     
     logger.info("=" * 60)
     logger.info("Ray Serve is running!")
     logger.info("=" * 60)
-    logger.info("Model endpoint: http://localhost:8000/predict")
+    logger.info(f"Model endpoint: http://0.0.0.0:{port}/predict")
     logger.info("")
     logger.info("Example curl request:")
     logger.info(

@@ -1,5 +1,6 @@
-# Ray core dependencies
-ray[default]>=2.8.0
+# Ray core dependencies with Train and Serve extras
+# ray[default] includes basic Ray, but we need train and serve extras
+ray[train,serve]>=2.8.0
 
 # PyTorch (CPU version by default; install GPU version separately if needed)
 # For GPU support: pip install torch torchvision --index-url https://download.pytorch.org/whl/cu118
