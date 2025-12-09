@@ -14,7 +14,6 @@ Then call: curl -X POST http://localhost:8000/predict -H "Content-Type: applicat
 import os
 import logging
 import torch
-from fastapi import FastAPI, Request
 from ray import serve
 from ray.serve import Application
 from model_def import SimpleMLP
@@ -118,46 +117,50 @@ class ModelDeployment:
 )
 class PredictDeployment:
     """
-    HTTP deployment for the prediction endpoint using FastAPI.
+    HTTP deployment for the prediction endpoint.
     """
     
     def __init__(self, model_deployment):
         self.model = model_deployment
-        self.app = FastAPI()
-        
-        @self.app.post("/predict")
-        async def predict_endpoint(request: Request) -> dict:
-            """
-            HTTP POST endpoint for predictions.
-            
-            Expected JSON body:
-            {
-                "features": [0.1, 0.2, 0.3, ...]  # List of 10 feature values
-            }
-            
-            Returns:
-                JSON response with prediction
-            """
-            data = await request.json()
-            features = data.get("features", [])
-            
-            if not features:
-                return {
-                    "error": "Missing 'features' in request body",
-                    "prediction": None
-                }
-            
-            if len(features) != 10:
-                return {
-                    "error": f"Expected 10 features, got {len(features)}",
-                    "prediction": None
-                }
-            
-            return self.model.predict(features)
     
-    async def __call__(self, request):
-        """Handle requests through FastAPI."""
-        return await self.app(request.scope, request.receive, request.send)
+    async def __call__(self, request) -> dict:
+        """
+        HTTP POST endpoint for predictions.
+        
+        Expected JSON body:
+        {
+            "features": [0.1, 0.2, 0.3, ...]  # List of 10 feature values
+        }
+        
+        Returns:
+            JSON response with prediction
+        """
+        # Handle both dict and starlette Request objects
+        if hasattr(request, 'json'):
+            data = await request.json()
+        elif isinstance(request, dict):
+            data = request
+        else:
+            # Try to get JSON from request body
+            import json
+            body = await request.body()
+            data = json.loads(body) if body else {}
+        
+        features = data.get("features", [])
+        
+        if not features:
+            return {
+                "error": "Missing 'features' in request body",
+                "prediction": None
+            }
+        
+        if len(features) != 10:
+            return {
+                "error": f"Expected 10 features, got {len(features)}",
+                "prediction": None
+            }
+        
+        return self.model.predict(features)
 
 
 def create_app() -> Application:
@@ -220,11 +223,12 @@ def main():
     logger.info(f"Binding to 0.0.0.0:{port}")
     logger.info("=" * 60)
     
-    # Start Ray Serve with FastAPI integration
+    # Start Ray Serve - route_prefix is set in serve.run
     serve.run(
         create_app(),
         host="0.0.0.0",
-        port=port
+        port=port,
+        route_prefix="/predict"
     )
     
     logger.info("=" * 60)
