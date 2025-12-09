@@ -26,7 +26,11 @@ logger = logging.getLogger(__name__)
 
 @serve.deployment(
     num_replicas=1,
-    ray_actor_options={"num_cpus": 1, "num_gpus": 0.5 if torch.cuda.is_available() else 0}
+    ray_actor_options={
+        "num_cpus": 1,
+        "num_gpus": 0,  # Disable GPU for Render free tier
+        "memory": 100 * 1024 * 1024  # Limit to 100MB per replica
+    }
 )
 class ModelDeployment:
     """
@@ -47,7 +51,7 @@ class ModelDeployment:
         
         # Model configuration (should match training config)
         input_dim = 10
-        hidden_dim = 64
+        hidden_dim = 32  # Reduced for memory efficiency
         output_dim = 1
         
         # Initialize model architecture
@@ -221,15 +225,25 @@ def main():
     logger.info("=" * 60)
     
     # Initialize Ray if not already initialized
+    # Optimized for low memory usage
     import ray
     try:
         if not ray.is_initialized():
             ray.init(
                 ignore_reinit_error=True,
                 _temp_dir="/tmp/ray",
-                num_cpus=1
+                num_cpus=1,
+                object_store_memory=100 * 1024 * 1024,  # Limit object store to 100MB
+                _system_config={
+                    "object_spilling_config": {
+                        "type": "filesystem",
+                        "params": {
+                            "directory_path": "/tmp/ray_spill"
+                        }
+                    }
+                }
             )
-            logger.info("Ray initialized successfully")
+            logger.info("Ray initialized successfully with memory limits")
     except Exception as e:
         logger.warning(f"Ray initialization warning: {e}")
     

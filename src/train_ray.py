@@ -53,8 +53,8 @@ def train_func(config: dict):
         input_dim=input_dim
     )
     
-    # Initialize model
-    model = SimpleMLP(input_dim=input_dim, hidden_dim=64, output_dim=1)
+    # Initialize model (reduced hidden_dim for memory efficiency)
+    model = SimpleMLP(input_dim=input_dim, hidden_dim=32, output_dim=1)
     model = train.torch.prepare_model(model)
     
     # Loss and optimizer
@@ -146,20 +146,23 @@ def main():
     
     # Training configuration
     # In production, this would come from a config file (YAML, JSON, etc.)
+    # Optimized for low memory usage (Render free tier: 512MB)
     train_config = {
-        "batch_size": 32,
-        "num_samples": 1000,
+        "batch_size": 16,  # Reduced from 32
+        "num_samples": 500,  # Reduced from 1000
         "input_dim": 10,
         "lr": 0.001,
-        "num_epochs": 5
+        "num_epochs": 3  # Reduced from 5
     }
     
     # Scaling configuration
     # For multi-node: use num_workers > 1 and configure Ray cluster
     # For GPU: set use_gpu=True (Ray will auto-detect available GPUs)
+    # Optimized for low memory usage
     scaling_config = ScalingConfig(
         num_workers=1,  # Single node for this demo
-        use_gpu=torch.cuda.is_available()  # Use GPU if available
+        use_gpu=False,  # Disable GPU for Render free tier
+        resources_per_worker={"CPU": 1, "memory": 400 * 1024 * 1024}  # Limit memory to 400MB
     )
     
     logger.info("Starting Ray Train...")

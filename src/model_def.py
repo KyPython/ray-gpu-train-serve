@@ -16,9 +16,11 @@ class SimpleMLP(nn.Module):
     A simple Multi-Layer Perceptron for demonstration.
     
     In production, this would be replaced with your actual model architecture.
+    Optimized for low memory usage.
     """
-    def __init__(self, input_dim: int = 10, hidden_dim: int = 64, output_dim: int = 1):
+    def __init__(self, input_dim: int = 10, hidden_dim: int = 32, output_dim: int = 1):
         super(SimpleMLP, self).__init__()
+        # Reduced hidden_dim from 64 to 32 to save memory
         self.network = nn.Sequential(
             nn.Linear(input_dim, hidden_dim),
             nn.ReLU(),
@@ -63,7 +65,7 @@ class ToyDataset(Dataset):
         return self.X[idx], self.y[idx]
 
 
-def get_data_loaders(batch_size: int = 32, num_samples: int = 1000, input_dim: int = 10):
+def get_data_loaders(batch_size: int = 16, num_samples: int = 500, input_dim: int = 10):
     """
     Create train and validation data loaders.
     
