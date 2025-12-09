@@ -113,14 +113,9 @@ class ModelDeployment:
             }
 
 
-app = FastAPI()
-
-
 @serve.deployment(
-    num_replicas=1,
-    route_prefix="/predict"
+    num_replicas=1
 )
-@serve.ingress(app)
 class PredictDeployment:
     """
     HTTP deployment for the prediction endpoint using FastAPI.
@@ -128,36 +123,41 @@ class PredictDeployment:
     
     def __init__(self, model_deployment):
         self.model = model_deployment
+        self.app = FastAPI()
+        
+        @self.app.post("/predict")
+        async def predict_endpoint(request: Request) -> dict:
+            """
+            HTTP POST endpoint for predictions.
+            
+            Expected JSON body:
+            {
+                "features": [0.1, 0.2, 0.3, ...]  # List of 10 feature values
+            }
+            
+            Returns:
+                JSON response with prediction
+            """
+            data = await request.json()
+            features = data.get("features", [])
+            
+            if not features:
+                return {
+                    "error": "Missing 'features' in request body",
+                    "prediction": None
+                }
+            
+            if len(features) != 10:
+                return {
+                    "error": f"Expected 10 features, got {len(features)}",
+                    "prediction": None
+                }
+            
+            return self.model.predict(features)
     
-    @app.post("/")
-    async def predict(self, request: Request) -> dict:
-        """
-        HTTP POST endpoint for predictions.
-        
-        Expected JSON body:
-        {
-            "features": [0.1, 0.2, 0.3, ...]  # List of 10 feature values
-        }
-        
-        Returns:
-            JSON response with prediction
-        """
-        data = await request.json()
-        features = data.get("features", [])
-        
-        if not features:
-            return {
-                "error": "Missing 'features' in request body",
-                "prediction": None
-            }
-        
-        if len(features) != 10:
-            return {
-                "error": f"Expected 10 features, got {len(features)}",
-                "prediction": None
-            }
-        
-        return self.model.predict(features)
+    async def __call__(self, request):
+        """Handle requests through FastAPI."""
+        return await self.app(request.scope, request.receive, request.send)
 
 
 def create_app() -> Application:
