@@ -240,51 +240,52 @@ def main():
     except Exception as e:
         logger.warning(f"Ray initialization warning: {e}")
     
-    # Configure Ray Serve HTTP options
-    # In newer Ray versions, host/port are configured via HTTPOptions
-    from ray.serve.config import HTTPOptions
-    http_options = HTTPOptions(
-        host="0.0.0.0",
-        port=port
-    )
-    
     # Start Ray Serve
-    # serve.run() blocks and keeps the process alive
+    # In newer Ray versions, use serve.start() with HTTP options, then deploy
     logger.info("Deploying application...")
     logger.info(f"About to start Ray Serve on 0.0.0.0:{port}")
     
     try:
+        # Start Ray Serve with HTTP configuration
+        serve.start(
+            http_options={
+                "host": "0.0.0.0",
+                "port": port
+            }
+        )
+        
         # Deploy the application
-        serve.start(http_options=http_options)
         app = create_app()
         serve.run(app, route_prefix="/predict")
+        
+        # Log success messages
+        logger.info("=" * 60)
+        logger.info("Ray Serve is running!")
+        logger.info("=" * 60)
+        logger.info(f"Model endpoint: http://0.0.0.0:{port}/predict")
+        logger.info("")
+        logger.info("Example curl request:")
+        logger.info(
+            f'curl -X POST http://localhost:{port}/predict \\'
+        )
+        logger.info(
+            '  -H "Content-Type: application/json" \\'
+        )
+        logger.info(
+            '  -d \'{"features": [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0]}\''
+        )
+        logger.info("")
+        logger.info("Ray Dashboard: http://localhost:8265")
+        logger.info("=" * 60)
+        
     except KeyboardInterrupt:
         logger.info("Ray Serve stopped by user")
     except Exception as e:
         logger.error(f"Ray Serve error: {e}")
+        import traceback
+        traceback.print_exc()
         raise
     
-    # This should never be reached as serve.run() blocks
-    logger.error("Ray Serve exited unexpectedly!")
-    
-    logger.info("=" * 60)
-    logger.info("Ray Serve is running!")
-    logger.info("=" * 60)
-    logger.info(f"Model endpoint: http://0.0.0.0:{port}/predict")
-    logger.info("")
-    logger.info("Example curl request:")
-    logger.info(
-        'curl -X POST http://localhost:8000/predict \\'
-    )
-    logger.info(
-        '  -H "Content-Type: application/json" \\'
-    )
-    logger.info(
-        '  -d \'{"features": [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0]}\''
-    )
-    logger.info("")
-    logger.info("Ray Dashboard: http://localhost:8265")
-    logger.info("=" * 60)
 
 
 if __name__ == "__main__":
