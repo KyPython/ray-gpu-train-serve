@@ -113,20 +113,17 @@ class ModelDeployment:
 
 
 @serve.deployment(
-    route_prefix="/predict",
     num_replicas=1
 )
-@serve.ingress
-class PredictIngress:
+class PredictDeployment:
     """
-    HTTP ingress for the prediction endpoint.
+    HTTP deployment for the prediction endpoint.
     """
     
     def __init__(self, model_deployment):
         self.model = model_deployment
     
-    @serve.ingress.http_post("/")
-    async def predict(self, request: dict) -> dict:
+    async def __call__(self, request: dict) -> dict:
         """
         HTTP POST endpoint for predictions.
         
@@ -163,7 +160,7 @@ def create_app() -> Application:
         Application: Configured Ray Serve application
     """
     model_deployment = ModelDeployment.bind()
-    return PredictIngress.bind(model_deployment)
+    return PredictDeployment.bind(model_deployment)
 
 
 def main():
@@ -215,7 +212,13 @@ def main():
     logger.info(f"Binding to 0.0.0.0:{port}")
     logger.info("=" * 60)
     
-    serve.run(create_app(), host="0.0.0.0", port=port)
+    # Use route_prefix in serve.run (new API)
+    serve.run(
+        create_app(),
+        host="0.0.0.0",
+        port=port,
+        route_prefix="/predict"
+    )
     
     logger.info("=" * 60)
     logger.info("Ray Serve is running!")

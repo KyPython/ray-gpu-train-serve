@@ -149,8 +149,7 @@ def main():
     # For GPU: set use_gpu=True (Ray will auto-detect available GPUs)
     scaling_config = ScalingConfig(
         num_workers=1,  # Single node for this demo
-        use_gpu=torch.cuda.is_available(),  # Use GPU if available
-        trainer_resources={"CPU": 1}
+        use_gpu=torch.cuda.is_available()  # Use GPU if available
     )
     
     logger.info("Starting Ray Train...")
