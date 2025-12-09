@@ -24,12 +24,11 @@ COPY src/ ./src/
 
 # Train model if artifacts don't exist (for fresh deployments)
 # In production, you'd download from cloud storage instead
-RUN if [ ! -f "artifacts/model.pt" ]; then \
-    python src/train_ray.py || echo "Warning: Model training failed, ensure model.pt exists"; \
+# Create artifacts directory and train model
+RUN mkdir -p artifacts && \
+    if [ ! -f "artifacts/model.pt" ]; then \
+        python src/train_ray.py || echo "Warning: Model training failed, ensure model.pt exists"; \
     fi
-
-# Copy artifacts if they exist (for pre-trained models)
-COPY artifacts/ ./artifacts/ 2>/dev/null || true
 
 # Expose Ray Serve port
 EXPOSE 8000
