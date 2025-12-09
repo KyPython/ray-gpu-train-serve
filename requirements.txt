@@ -6,10 +6,6 @@ ray[train,serve]>=2.8.0
 # For GPU support: pip install torch torchvision --index-url https://download.pytorch.org/whl/cu118
 torch>=2.0.0
 
-# FastAPI for Ray Serve HTTP routing
-fastapi>=0.100.0
-uvicorn[standard]>=0.23.0
-
 # Additional utilities
 numpy>=1.24.0
 
