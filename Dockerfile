@@ -27,7 +27,11 @@ COPY src/ ./src/
 # Create artifacts directory and train model
 RUN mkdir -p artifacts && \
     if [ ! -f "artifacts/model.pt" ]; then \
-        python src/train_ray.py || echo "Warning: Model training failed, ensure model.pt exists"; \
+        python src/train_ray.py && \
+        ls -la artifacts/ && \
+        test -f artifacts/model.pt && echo "Model file verified" || echo "Warning: Model file not found"; \
+    else \
+        echo "Model already exists, skipping training"; \
     fi
 
 # Expose Ray Serve port

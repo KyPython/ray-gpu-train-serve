@@ -115,7 +115,7 @@ def train_func(config: dict):
     # Save model checkpoint
     # In production, this would save to cloud storage (S3, GCS, etc.)
     os.makedirs("artifacts", exist_ok=True)
-    model_path = "artifacts/model.pt"
+    model_path = os.path.abspath("artifacts/model.pt")  # Use absolute path
     
     # Get the underlying PyTorch model from Ray's wrapper
     # For single worker, model is not wrapped in DDP, so we can access it directly
@@ -124,6 +124,7 @@ def train_func(config: dict):
     torch.save(unwrapped_model.state_dict(), model_path)
     
     logger.info(f"Training completed. Model saved to {model_path}")
+    logger.info(f"Model file exists: {os.path.exists(model_path)}")
     
     # Create a checkpoint for Ray Train
     checkpoint = Checkpoint.from_directory("artifacts")

@@ -180,38 +180,33 @@ def main():
     """
     logger.info("Starting Ray Serve...")
     
-    # Check if model exists, train if not
+    # Check if model exists
     model_path = "artifacts/model.pt"
-    if not os.path.exists(model_path):
-        logger.warning(
-            f"Model not found at {model_path}. Attempting to train..."
+    abs_model_path = os.path.abspath(model_path)
+    
+    # Check multiple possible locations
+    possible_paths = [
+        model_path,
+        abs_model_path,
+        os.path.join("/app", model_path),
+        os.path.join(os.getcwd(), model_path)
+    ]
+    
+    model_found = False
+    for path in possible_paths:
+        if os.path.exists(path):
+            model_path = path
+            model_found = True
+            logger.info(f"Model found at: {model_path}")
+            break
+    
+    if not model_found:
+        logger.error(
+            f"Model not found at any of these locations: {possible_paths}. "
+            "Model should have been trained during Docker build. "
+            "Please check build logs."
         )
-        try:
-            # Try to train the model
-            import sys
-            import subprocess
-            script_dir = os.path.dirname(os.path.abspath(__file__))
-            train_script = os.path.join(script_dir, "train_ray.py")
-            result = subprocess.run(
-                [sys.executable, train_script],
-                capture_output=True,
-                text=True,
-                timeout=300  # 5 minute timeout
-            )
-            if result.returncode == 0 and os.path.exists(model_path):
-                logger.info("Model trained successfully!")
-            else:
-                logger.error(f"Training failed: {result.stderr}")
-                logger.error(
-                    "Please run training manually: python src/train_ray.py"
-                )
-                return
-        except Exception as e:
-            logger.error(
-                f"Failed to train model: {e}. "
-                "Please run training manually: python src/train_ray.py"
-            )
-            return
+        return
     
     # Start Ray Serve
     # In production, this would be deployed to a Ray cluster
@@ -221,11 +216,23 @@ def main():
     logger.info("=" * 60)
     logger.info("Starting Ray Serve...")
     logger.info(f"Binding to 0.0.0.0:{port}")
+    logger.info(f"Model path: {os.path.abspath(model_path)}")
+    logger.info(f"Model exists: {os.path.exists(model_path)}")
     logger.info("=" * 60)
     
+    # Initialize Ray if not already initialized
+    import ray
+    if not ray.is_initialized():
+        ray.init(
+            ignore_reinit_error=True,
+            runtime_env={"env_vars": {"RAY_SERVE_ENABLE_EXPERIMENTAL_STREAMING": "1"}}
+        )
+    
     # Start Ray Serve - route_prefix is set in serve.run
+    # Use name parameter to ensure proper deployment
     serve.run(
         create_app(),
+        name="predict_app",
         host="0.0.0.0",
         port=port,
         route_prefix="/predict"
